@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "sample_agent"
+name = "zig"
 version = "0.1.0"
 description = "Starter"
 authors = ["Markus Ecker <markus.ecker@gmail.com>"]
@@ -25,4 +25,4 @@ langgraph = "0.4.3"
 langgraph-prebuilt = "0.1.8"
 
 [tool.poetry.scripts]
-demo = "sample_agent.demo:main"
+demo = "zig.demo:main"
