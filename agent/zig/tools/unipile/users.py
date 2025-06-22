@@ -110,18 +110,25 @@ class LinkedInSearchResponse:
     cursor: Optional[str]
 
 async def get_account_owner_profile(
-    account_id: str = None,
-    raw: bool = False
+    account_id: str = None
 ) -> Any:
-    """
-    Get the profile of the authenticated LinkedIn user
+    """Retrieves the LinkedIn profile of the currently authenticated user.
+    
+    This function fetches comprehensive profile information about the user who is currently
+    authenticated with the provided account ID. This is useful for getting details about
+    the user on whose behalf API calls are being made.
+    
+    See https://docs.unipile.com/reference/linkedin-get-account-owner-profile
     
     Args:
-        account_id: Optional account ID (will use env var if not provided)
-        raw: Whether to return the raw API response
+        account_id (Optional[str]): The Unipile account ID to use for this request. If not provided,
+                                   the function will use the UNIPILE_ACCOUNT_ID environment variable.
     
     Returns:
-        The LinkedIn account owner profile
+        Any: The raw API response containing the authenticated user's profile information.
+    
+    Raises:
+        Exception: If there's an API error during the request.
     """
     id = ensure_account_id(account_id)
     base_url = get_base_url()
@@ -132,24 +139,32 @@ async def get_account_owner_profile(
         'headers': get_headers()
     })
     
-    # Return raw response if raw is true, otherwise clean and return
-    return response if raw else clean_account_owner_profile(response)
+    return response
 
 async def get_user_profile_by_identifier(
     identifier: str,
-    account_id: str = None,
-    raw: bool = False
+    account_id: str = None
 ) -> Any:
-    """
-    Get a LinkedIn user's profile by their public identifier
+    """Retrieves a LinkedIn user's profile by their public identifier.
+    
+    This function fetches comprehensive profile information about a LinkedIn user identified
+    by their public identifier (the part of their LinkedIn profile URL after "linkedin.com/in/").
+    The amount of information available may depend on the user's privacy settings and your
+    connection level with them.
+    
+    See https://docs.unipile.com/reference/linkedin-get-user-profile
     
     Args:
-        identifier: The LinkedIn user's public identifier (e.g., "johndoe")
-        account_id: Optional account ID (will use env var if not provided)
-        raw: Whether to return the raw API response
+        identifier (str): The LinkedIn user's public identifier (e.g., "johndoe" from 
+                         linkedin.com/in/johndoe) or their provider ID.
+        account_id (Optional[str]): The Unipile account ID to use for this request. If not provided,
+                                   the function will use the UNIPILE_ACCOUNT_ID environment variable.
     
     Returns:
-        The LinkedIn user profile
+        Any: The raw API response containing the user's profile information.
+    
+    Raises:
+        Exception: If no identifier is provided or if there's an API error.
     """
     if not identifier:
         raise Exception('User identifier is required')
@@ -163,8 +178,7 @@ async def get_user_profile_by_identifier(
         'headers': get_headers()
     })
     
-    # Return raw response if raw is true, otherwise clean and return
-    return response if raw else clean_user_profile(response)
+    return response
 
 async def search_linkedin(
     keywords: str,
@@ -211,16 +225,44 @@ async def get_relations(
     raw: bool = False
 ) -> Any:
     """
-    Get the user's LinkedIn connections
+    Retrieves the authenticated user's LinkedIn connections (1st-degree network).
+    
+    This function fetches the list of LinkedIn users who are directly connected to the
+    authenticated user (1st-degree connections). Results can be paginated using a cursor
+    and limited to control the number of returned items.
     
     Args:
-        account_id: Optional account ID (will use env var if not provided)
-        cursor: Optional cursor for pagination
-        limit: Optional limit for the number of results
-        raw: Whether to return the raw API response
+        account_id (Optional[str]): The Unipile account ID to use for this request. If not provided,
+                                   the function will use the UNIPILE_ACCOUNT_ID environment variable.
+        cursor (Optional[str]): A pagination cursor for retrieving the next set of connections.
+                               This value is typically obtained from a previous API response.
+        limit (Optional[int]): Maximum number of connections to return in a single request.
+        raw (bool): If True, returns the raw API response without cleaning. Default is False.
     
     Returns:
-        The user's LinkedIn connections
+        PaginatedResponse[LinkedInUserRelation]: A paginated list of LinkedIn connection objects, each containing:
+            - Basic user information (first name, last name, headline)
+            - Profile URLs and identifiers
+            - Profile picture URL (if available)
+            - Connection timestamp
+            - Member URN and ID
+            - Other connection metadata
+    
+    Example:
+        ```python
+        # Get all connections
+        all_connections = await get_relations()
+        
+        # Get limited number of connections
+        some_connections = await get_relations(limit=50)
+        
+        # Get next page of connections using cursor from previous response
+        next_connections = await get_relations(cursor=all_connections.cursor)
+        
+        # Print connection names
+        for connection in all_connections.items:
+            print(f"{connection.first_name} {connection.last_name} - {connection.headline}")
+        ```
     """
     id = ensure_account_id(account_id)
     base_url = get_base_url()
@@ -316,16 +358,46 @@ async def send_invitation(
     raw: bool = False
 ) -> Any:
     """
-    Send a LinkedIn connection request
+    Sends a LinkedIn connection request to another user.
+    
+    This function allows you to send a connection request (invitation) to a LinkedIn user
+    identified by their provider ID. You can optionally include a personalized message with
+    the invitation to increase the likelihood of acceptance.
     
     Args:
-        recipient_provider_id: The LinkedIn provider ID of the person to invite
-        message: Optional message to include with the invitation
-        account_id: Optional account ID (will use env var if not provided)
-        raw: Whether to return the raw API response
+        recipient_provider_id (str): The LinkedIn provider ID of the person to invite.
+                                    This is typically obtained from user profile information.
+        message (Optional[str]): A personalized message to include with the connection request.
+                                LinkedIn limits this to 300 characters.
+        account_id (Optional[str]): The Unipile account ID to use for this request. If not provided,
+                                   the function will use the UNIPILE_ACCOUNT_ID environment variable.
+        raw (bool): If True, returns the raw API response without cleaning. Default is False.
     
     Returns:
-        The result of the invitation request
+        Dict[str, Any]: An object containing information about the sent invitation:
+            - Status of the invitation (pending, sent, etc.)
+            - Timestamp of when the invitation was sent
+            - Recipient information
+            - Other invitation metadata
+    
+    Raises:
+        Exception: If no recipient_provider_id is provided or if there's an API error.
+    
+    Example:
+        ```python
+        # Send a connection request with a personalized message
+        invitation = await send_invitation(
+            "recipient123456",
+            "Hi! I enjoyed your recent post about AI developments and would love to connect."
+        )
+        
+        # Send a connection request without a message
+        simple_invitation = await send_invitation("recipient789012")
+        ```
+    
+    Note:
+        LinkedIn has rate limits and restrictions on connection requests. Sending too many
+        requests in a short period may result in temporary restrictions on your account.
     """
     if not recipient_provider_id:
         raise Exception('Recipient Provider ID is required')

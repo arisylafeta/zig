@@ -12,6 +12,8 @@ from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from langgraph.types import Command
 from copilotkit import CopilotKitState
+from zig.tools.apollo.search import people_search, organization_search, organization_job_postings
+# from zig.tools.apollo.enrich import people_enrichment, bulk_people_enrichment, organization_enrichment, bulk_organization_enrichment
 
 class AgentState(CopilotKitState):
     """
@@ -24,21 +26,8 @@ class AgentState(CopilotKitState):
     proverbs: list[str] = []
     # your_custom_agent_state: str = ""
 
-@tool
-def get_weather(location: str):
-    """
-    Get the weather for a given location.
-    """
-    return f"The weather for {location} is 70 degrees."
-
-# @tool
-# def your_tool_here(your_arg: str):
-#     """Your tool description here."""
-#     print(f"Your tool logic here")
-#     return "Your tool response here."
-
 tools = [
-    get_weather
+    people_search,
     # your_tool_here
 ]
 
@@ -61,8 +50,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> Command[Litera
     model_with_tools = model.bind_tools(
         [
             *state["copilotkit"]["actions"],
-            get_weather,
-            # your_tool_here
+            *tools
         ],
 
         # 2.1 Disable parallel tool calls to avoid race conditions,
@@ -74,6 +62,7 @@ async def chat_node(state: AgentState, config: RunnableConfig) -> Command[Litera
     # 3. Define the system message by which the chat model will be run
     system_message = SystemMessage(
         content=f"You are a helpful assistant. Talk in {state.get('language', 'english')}."
+        "You have access to the following tools: {tools}. Your job is to use the tools to answer the user's question."
     )
 
     # 4. Run the model to generate a response

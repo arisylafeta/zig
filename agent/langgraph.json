@@ -3,7 +3,7 @@
   "dockerfile_lines": [],
   "dependencies": ["."],
   "graphs": {
-    "zig": "./zig/agent.py:graph"
+    "zig": "./zig/graph.py:graph"
   },
   "env": ".env"
 }

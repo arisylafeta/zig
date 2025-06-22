@@ -3,51 +3,63 @@ Unipile API - LinkedIn Companies
 
 This file contains functions for interacting with LinkedIn companies via the Unipile API.
 """
-
 import json
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
 from .config import get_base_url, get_headers, make_request, ensure_account_id
-from .cleaners.companies import clean_company_profile, clean_company_search_results
+from langchain_core.tools import tool
 
 # Types
-class LinkedInCompanyLocation:
-    is_headquarter: bool
-    city: str
-    country: str
-    street: List[str]
-    postalCode: Optional[str]
-    area: Optional[str]
+# class LinkedInCompanyLocation:
+#     is_headquarter: bool
+#     city: str
+#     country: str
+#     street: List[str]
+#     postalCode: Optional[str]
+#     area: Optional[str]
 
-class LinkedInCompany:
-    object: str
-    provider: str
-    provider_id: str
-    entity_urn: str
-    name: str
-    description: Optional[str]
-    founded_year: Optional[int]
-    locations: List[LinkedInCompanyLocation]
-    messaging: Optional[Dict[str, Any]]
-    activities: Optional[List[str]]
-    website: Optional[str]
-    employee_count: Optional[int]
-    employee_count_range: Optional[Dict[str, Optional[int]]]
-    industry: Optional[List[str]]
-    logo: Optional[str]
-    logo_large: Optional[str]
+# class LinkedInCompany:
+#     object: str
+#     provider: str
+#     provider_id: str
+#     entity_urn: str
+#     name: str
+#     description: Optional[str]
+#     founded_year: Optional[int]
+#     locations: List[LinkedInCompanyLocation]
+#     messaging: Optional[Dict[str, Any]]
+#     activities: Optional[List[str]]
+#     website: Optional[str]
+#     employee_count: Optional[int]
+#     employee_count_range: Optional[Dict[str, Optional[int]]]
+#     industry: Optional[List[str]]
+#     logo: Optional[str]
+#     logo_large: Optional[str]
 
-"""
-Get details about a LinkedIn company
-
-@param identifier - The LinkedIn company identifier (e.g., "linkedin")
-@param account_id - Optional account ID (will use env var if not provided)
-@returns The LinkedIn company profile
-"""
+@tool
 async def get_company_profile(
     identifier: str,
-    account_id: Optional[str] = None,
-    raw: bool = False
+    account_id: Optional[str] = None
 ) -> Any:
+    """Retrieves detailed information about a LinkedIn company profile using the company's identifier.
+
+    This function fetches comprehensive details about a LinkedIn company, including its name, 
+    description, industry, employee count, locations, website, and other profile information.
+
+    See https://docs.unipile.com/reference/linkedin-company-profile
+
+    Args:
+        identifier (str): The LinkedIn company identifier, which can be the company's public name 
+                         in the URL (e.g., "linkedin" from linkedin.com/company/linkedin) or 
+                         their unique provider ID.
+        account_id (Optional[str]): The Unipile account ID to use for this request. If not provided, 
+                                   the function will use the UNIPILE_ACCOUNT_ID environment variable.
+
+    Returns:
+        Any: The raw API response containing the company profile information.
+
+    Raises:
+        Exception: If the company identifier is not provided or if there's an API error.
+    """
     if not identifier:
         raise Exception('Company identifier is required')
     
@@ -60,23 +72,35 @@ async def get_company_profile(
         'headers': get_headers()
     })
     
-    # Return raw response if raw is true, otherwise clean and return
-    return response if raw else clean_company_profile(response)
+    return response
 
-"""
-Search for LinkedIn companies
 
-@param keywords - The search keywords
-@param account_id - Optional account ID (will use env var if not provided)
-@param limit - Optional limit for the number of results
-@returns LinkedIn company search results
-"""
 async def search_companies(
     keywords: str,
     account_id: Optional[str] = None,
-    limit: Optional[int] = None,
-    raw: bool = False
+    limit: Optional[int] = None
 ) -> Any:
+    """Searches for LinkedIn companies based on provided keywords.
+
+    This function allows you to search for companies on LinkedIn using specific keywords
+    and returns a list of matching company profiles. The search results can be limited
+    to control the number of returned items.
+
+    See https://docs.unipile.com/reference/linkedin-search-companies
+
+    Args:
+        keywords (str): The search terms to find relevant companies. Can include company names,
+                       industries, locations, or other identifying information.
+        account_id (Optional[str]): The Unipile account ID to use for this request. If not provided,
+                                   the function will use the UNIPILE_ACCOUNT_ID environment variable.
+        limit (Optional[int]): Maximum number of search results to return. Defaults to 10 if not specified.
+
+    Returns:
+        Any: The raw API response containing a list of company objects matching the search criteria.
+
+    Raises:
+        Exception: If no search keywords are provided or if there's an API error.
+    """
     if not keywords:
         raise Exception('Search keywords are required')
     
@@ -96,5 +120,4 @@ async def search_companies(
         })
     })
     
-    # Return raw response if raw is true, otherwise clean and return
-    return response if raw else clean_company_search_results(response)
+    return response

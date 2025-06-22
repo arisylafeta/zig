@@ -7,12 +7,7 @@ This file contains functions for interacting with LinkedIn messages via the Unip
 import json
 from typing import List, Dict, Any, Optional, Union
 from .config import get_base_url, get_headers, make_request, ensure_account_id, PaginatedResponse
-from .cleaners.messages import (
-    clean_chats,
-    clean_chat_messages,
-    clean_create_chat_response,
-    clean_send_message_response
-)
+from langchain_core.tools import tool
 
 # Types
 class LinkedInChat:
@@ -69,20 +64,34 @@ class LinkedInMessageAttachment:
     mime_type: Optional[str]
     thumbnail_url: Optional[str]
 
-"""
-Get the user's LinkedIn conversations
 
-@param account_id - Optional account ID (will use env var if not provided)
-@param cursor - Optional cursor for pagination
-@param limit - Optional limit for the number of results
-@returns The user's LinkedIn chats
-"""
+@tool
 async def get_chats(
     account_id: Optional[str] = None,
     cursor: Optional[str] = None,
-    limit: Optional[int] = None,
-    raw: bool = False
+    limit: Optional[int] = None
 ) -> Any:
+    """Retrieves all LinkedIn conversations (chats) for the authenticated user.
+
+    This function fetches the list of conversations the user has on LinkedIn, including
+    both individual and group chats. Results can be paginated using a cursor and limited
+    to control the number of returned items.
+
+    See https://docs.unipile.com/reference/linkedin-get-chats
+
+    Args:
+        account_id (Optional[str]): The Unipile account ID to use for this request. If not provided,
+                                   the function will use the UNIPILE_ACCOUNT_ID environment variable.
+        cursor (Optional[str]): A pagination cursor for retrieving the next set of results.
+                               This value is typically obtained from a previous API response.
+        limit (Optional[int]): Maximum number of chats to return in a single request.
+
+    Returns:
+        Any: The raw API response containing a paginated list of LinkedIn chat objects.
+
+    Raises:
+        Exception: If there's an API error during the request.
+    """
     id_to_use = ensure_account_id(account_id)
     base_url = get_base_url()
     
@@ -97,25 +106,38 @@ async def get_chats(
         'headers': get_headers()
     })
     
-    # Return raw response if raw is true, otherwise clean and return
-    return response if raw else clean_chats(response)
+    return response
 
-"""
-Get messages from a specific LinkedIn chat
-
-@param chat_id - The LinkedIn chat ID
-@param account_id - Optional account ID (will use env var if not provided)
-@param cursor - Optional cursor for pagination
-@param limit - Optional limit for the number of results
-@returns Messages from the LinkedIn chat
-"""
+@tool
 async def get_chat_messages(
     chat_id: str,
     account_id: Optional[str] = None,
     cursor: Optional[str] = None,
-    limit: Optional[int] = None,
-    raw: bool = False
+    limit: Optional[int] = None
 ) -> Any:
+    """Retrieves messages from a specific LinkedIn conversation (chat).
+
+    This function fetches the messages from a particular LinkedIn chat identified by its ID.
+    Messages are returned in chronological order, and results can be paginated using a cursor
+    and limited to control the number of returned items.
+
+    See https://docs.unipile.com/reference/linkedin-get-chat-messages
+
+    Args:
+        chat_id (str): The unique identifier for the LinkedIn chat. This is typically obtained
+                      from a previous call to get_chats().
+        account_id (Optional[str]): The Unipile account ID to use for this request. If not provided,
+                                   the function will use the UNIPILE_ACCOUNT_ID environment variable.
+        cursor (Optional[str]): A pagination cursor for retrieving the next set of messages.
+                               This value is typically obtained from a previous API response.
+        limit (Optional[int]): Maximum number of messages to return in a single request.
+
+    Returns:
+        Any: The raw API response containing a paginated list of LinkedIn message objects.
+
+    Raises:
+        Exception: If no chat_id is provided or if there's an API error.
+    """
     if not chat_id:
         raise Exception('Chat ID is required')
     
@@ -133,25 +155,37 @@ async def get_chat_messages(
         'headers': get_headers()
     })
     
-    # Return raw response if raw is true, otherwise clean and return
-    return response if raw else clean_chat_messages(response)
+    return response
 
-"""
-Send a message in a LinkedIn chat
-
-@param chat_id - The LinkedIn chat ID
-@param content - The content of the message
-@param account_id - Optional account ID (will use env var if not provided)
-@param options - Optional message options
-@returns The sent message
-"""
+@tool
 async def send_message(
     chat_id: str,
     content: str,
     account_id: Optional[str] = None,
-    options: Optional[Dict[str, Any]] = None,
-    raw: bool = False
+    options: Optional[Dict[str, Any]] = None
 ) -> Any:
+    """Sends a message in an existing LinkedIn chat.
+
+    This function sends a new message to a specific LinkedIn chat identified by its ID.
+    The message can be plain text or include attachments if specified in the options.
+
+    See https://docs.unipile.com/reference/linkedin-send-message
+
+    Args:
+        chat_id (str): The unique identifier for the LinkedIn chat where the message will be sent.
+        content (str): The text content of the message to send.
+        account_id (Optional[str]): The Unipile account ID to use for this request. If not provided,
+                                   the function will use the UNIPILE_ACCOUNT_ID environment variable.
+        options (Optional[Dict[str, Any]]): Additional options for the message, such as:
+            - type (str): The type of message (default is "text")
+            - attachments (List[Dict]): Any attachments to include with the message
+
+    Returns:
+        Any: The raw API response containing information about the sent message.
+
+    Raises:
+        Exception: If chat_id or content is not provided, or if there's an API error.
+    """
     if not chat_id:
         raise Exception('Chat ID is required')
     
@@ -177,23 +211,35 @@ async def send_message(
         'body': json.dumps(body)
     })
     
-    # Return raw response if raw is true, otherwise clean and return
-    return response if raw else clean_send_message_response(response)
+    return response
 
-"""
-Create a new chat with a LinkedIn user
-
-@param recipient_id - The LinkedIn user's provider ID
-@param text - The text of the message to be sent in the new chat
-@param account_id - Optional account ID (will use env var if not provided)
-@returns The created chat
-"""
+@tool
 async def create_chat(
     recipient_id: str,
     text: str,
-    account_id: Optional[str] = None,
-    raw: bool = False
+    account_id: Optional[str] = None
 ) -> Any:
+    """Creates a new LinkedIn conversation (chat) with a specific user and sends an initial message.
+
+    This function initiates a new conversation with a LinkedIn user identified by their provider ID
+    and sends an initial message to start the conversation. The function returns the newly created
+    chat object along with confirmation of the sent message.
+
+    See https://docs.unipile.com/reference/linkedin-create-chat
+
+    Args:
+        recipient_id (str): The LinkedIn provider ID of the user to start a conversation with.
+                           This is typically obtained from user profile information.
+        text (str): The content of the initial message to send in the new conversation.
+        account_id (Optional[str]): The Unipile account ID to use for this request. If not provided,
+                                   the function will use the UNIPILE_ACCOUNT_ID environment variable.
+
+    Returns:
+        Any: The raw API response containing information about the created chat and the sent message.
+
+    Raises:
+        Exception: If recipient_id or text is not provided, or if there's an API error.
+    """
     if not recipient_id:
         raise Exception('Recipient ID is required')
 
@@ -214,5 +260,4 @@ async def create_chat(
         })
     })
     
-    # Return raw response if raw is true, otherwise clean and return
-    return response if raw else clean_create_chat_response(response)
+    return response

@@ -11,7 +11,7 @@ from fastapi import FastAPI
 import uvicorn
 from copilotkit.integrations.fastapi import add_fastapi_endpoint
 from copilotkit import CopilotKitRemoteEndpoint, LangGraphAgent
-from zig.agent import graph
+from agent.zig.graph import graph
 
 app = FastAPI()
 sdk = CopilotKitRemoteEndpoint(

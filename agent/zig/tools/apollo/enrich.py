@@ -1,44 +1,35 @@
-from .cleaners.enrich import (
-    clean_people_enrichment,
-    clean_bulk_people_enrichment,
-    clean_organization_enrichment,
-    clean_bulk_organization_enrichment
-)
 from .config import apollo_config, ApolloError
 import json
 import requests
+from langchain_core.tools import tool
 
-"""
-The parameters for the people_enrichment function.
-See https://docs.apollo.io/reference/people-enrichment
+from typing import Dict, List, Any
 
-Parameters:
-    first_name (str, optional): The person's first name.
-    last_name (str, optional): The person's last name.
-    name (str, optional): The person's full name.
-    domain (str, optional): The domain name of the person's current employer.
-    email (str, optional): The email address of the person.
-    linkedin_url (str, optional): The LinkedIn profile URL of the person.
-    reveal_personal_emails (bool, optional): Whether to reveal personal emails. Default is False.
-    reveal_phone_number (bool, optional): Whether to reveal phone numbers. Default is False.
-    raw (bool, optional): Whether to return the raw API response.
-"""
+@tool
+async def people_enrichment(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Enriches data for a single person in the Apollo database.
 
-async def people_enrichment(params):
-    """
-    Enriches data for a single person.
     See https://docs.apollo.io/reference/people-enrichment
-    
+
     Args:
-        params: The parameters to identify the person.
-    
+        params (Dict[str, Any]): The parameters to identify the person. Possible keys:
+            first_name (str, optional): The person's first name.
+            last_name (str, optional): The person's last name.
+            name (str, optional): The person's full name.
+            domain (str, optional): The domain name of the person's current employer.
+            email (str, optional): The email address of the person.
+            linkedin_url (str, optional): The LinkedIn profile URL of the person.
+            reveal_personal_emails (bool, optional): Whether to reveal personal emails. Default is False.
+            reveal_phone_number (bool, optional): Whether to reveal phone numbers. Default is False.
+
     Returns:
-        The enriched person data.
+        Dict[str, Any]: A dictionary containing the enriched person data.
+
+    Raises:
+        ApolloError: If the Apollo API returns an error.
     """
     api_key = apollo_config["apiKey"]
     endpoint = apollo_config["endpoint"]
-    
-    raw = params.pop("raw", False)
     
     response = requests.post(
         f"{endpoint}/v1/people/match",
@@ -61,37 +52,35 @@ async def people_enrichment(params):
         )
     
     raw_data = response.json()
-    if raw:
-        return raw_data
-    return clean_people_enrichment(raw_data)
+    return raw_data
 
-"""
-The parameters for the bulk_people_enrichment function.
-See https://docs.apollo.io/reference/bulk-people-enrichment
+@tool
+async def bulk_people_enrichment(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Enriches data for up to 10 people in a single API call.
 
-Parameters:
-    details (list): An array of person details to enrich.
-                   Each object should conform to the PeopleEnrichmentParameters interface.
-    reveal_personal_emails (bool, optional): Whether to reveal personal emails for all people in the request. Default is False.
-    reveal_phone_number (bool, optional): Whether to reveal phone numbers for all people in the request. Default is False.
-    raw (bool, optional): Whether to return the raw API response.
-"""
-
-async def bulk_people_enrichment(params):
-    """
-    Enriches data for up to 10 people in a single API call.
     See https://docs.apollo.io/reference/bulk-people-enrichment
-    
+
     Args:
-        params: The parameters for bulk enrichment.
-    
+        params (Dict[str, Any]): The parameters for bulk enrichment. Possible keys:
+            details (List[Dict[str, Any]]): An array of person details to enrich.
+                Each object should include one or more of the following fields:
+                first_name (str, optional): The person's first name.
+                last_name (str, optional): The person's last name.
+                name (str, optional): The person's full name.
+                domain (str, optional): The domain name of the person's current employer.
+                email (str, optional): The email address of the person.
+                linkedin_url (str, optional): The LinkedIn profile URL of the person.
+            reveal_personal_emails (bool, optional): Whether to reveal personal emails for all people in the request. Default is False.
+            reveal_phone_number (bool, optional): Whether to reveal phone numbers for all people in the request. Default is False.
+
     Returns:
-        The enriched data for the people.
+        Dict[str, Any]: A dictionary containing the enriched data for the people.
+
+    Raises:
+        ApolloError: If the Apollo API returns an error.
     """
     api_key = apollo_config["apiKey"]
     endpoint = apollo_config["endpoint"]
-    
-    raw = params.pop("raw", False)
     
     response = requests.post(
         f"{endpoint}/v1/people/bulk_match",
@@ -114,34 +103,28 @@ async def bulk_people_enrichment(params):
         )
     
     raw_data = response.json()
-    if raw:
-        return raw_data
-    return clean_bulk_people_enrichment(raw_data)
+    return raw_data
 
-"""
-The parameters for the organization_enrichment function.
-See https://docs.apollo.io/reference/organization-enrichment
 
-Parameters:
-    domain (str): The domain name of the organization to enrich.
-    raw (bool, optional): Whether to return the raw API response.
-"""
+@tool
+async def organization_enrichment(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Enriches data for a single organization in the Apollo database.
 
-async def organization_enrichment(params):
-    """
-    Enriches data for a single organization.
     See https://docs.apollo.io/reference/organization-enrichment
-    
+
     Args:
-        params: The parameters to identify the organization.
-    
+        params (Dict[str, Any]): The parameters to identify the organization. Possible keys:
+            domain (str): The domain name of the organization to enrich.
+
     Returns:
-        The enriched organization data.
+        Dict[str, Any]: A dictionary containing the enriched organization data.
+
+    Raises:
+        ApolloError: If the Apollo API returns an error.
     """
     api_key = apollo_config["apiKey"]
     endpoint = apollo_config["endpoint"]
     domain = params.get("domain")
-    raw = params.get("raw", False)
     
     url = f"{endpoint}/v1/organizations/enrich"
     params = {
@@ -167,34 +150,27 @@ async def organization_enrichment(params):
         )
     
     raw_data = response.json()
-    if raw:
-        return raw_data
-    return clean_organization_enrichment(raw_data)
+    return raw_data
 
-"""
-The parameters for the bulk_organization_enrichment function.
-See https://docs.apollo.io/reference/bulk-organization-enrichment
+@tool
+async def bulk_organization_enrichment(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Enriches data for up to 10 organizations in a single API call.
 
-Parameters:
-    domains (list): An array of domain names to enrich.
-    raw (bool, optional): Whether to return the raw API response.
-"""
-
-async def bulk_organization_enrichment(params):
-    """
-    Enriches data for up to 10 organizations in a single API call.
     See https://docs.apollo.io/reference/bulk-organization-enrichment
-    
+
     Args:
-        params: The parameters for bulk enrichment.
-    
+        params (Dict[str, Any]): The parameters for bulk enrichment. Possible keys:
+            domains (List[str]): An array of domain names to enrich (up to 10).
+
     Returns:
-        The enriched data for the organizations.
+        Dict[str, Any]: A dictionary containing the enriched data for the organizations.
+
+    Raises:
+        ApolloError: If the Apollo API returns an error.
     """
     api_key = apollo_config["apiKey"]
     endpoint = apollo_config["endpoint"]
     domains = params.get("domains", [])
-    raw = params.get("raw", False)
     
     response = requests.post(
         f"{endpoint}/v1/organizations/bulk_enrich",
@@ -216,7 +192,5 @@ async def bulk_organization_enrichment(params):
             "Failed to fetch bulk organization enrichment data"
         )
     
-    raw_data = response.json()
-    if raw:
-        return raw_data
-    return clean_bulk_organization_enrichment(raw_data)
+    raw_data = response.json()      
+    return raw_data
