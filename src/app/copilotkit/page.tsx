@@ -3,7 +3,7 @@
 import { useCoAgent, useCopilotAction } from "@copilotkit/react-core";
 import { CopilotKitCSSProperties} from "@copilotkit/react-ui";
 import { useState } from "react";
-import SideChat from "@/components/side-chat";
+import SideChat from "@/components/chat-ui";
 
 export default function CopilotKitPage() {
   const [themeColor, setThemeColor] = useState("#6366f1");

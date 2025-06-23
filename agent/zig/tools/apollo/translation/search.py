@@ -1,8 +1,19 @@
 import json
 from typing import Dict, List, Any, Optional
 
+from pydantic import BaseModel, Field
 
-def extract_people_search_data(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+class PeopleSearchData(BaseModel):
+    first_name: str = Field(description="The first name of the person")
+    last_name: str = Field(description="The last name of the person")
+    linkedin_url: str = Field(description="The LinkedIn URL of the person")
+    email_status: str = Field(description="The email status of the person")
+    email: str = Field(description="The email of the person, or 'Unlock' if the email is not unlocked")
+    title: str = Field(description="The title of the person")
+    organization: str = Field(description="The organization of the person")
+    location: str = Field(description="The location of the person")
+
+def extract_people_search_data(data: Dict[str, Any]) -> List[PeopleSearchData]:
     """
     Extract relevant fields from Apollo peopleSearch response according to requirements:
     1. First Name

@@ -1,19 +1,34 @@
 from .config import apollo_config, ApolloError
-import requests
+import aiohttp
 from langchain.tools import tool
-from .translation.search import extract_people_search_data
+from .translation.search import extract_people_search_data, PeopleSearchData
 
-from typing import Dict, List, Any
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
+
+class PeopleSearchParams(BaseModel):
+    person_titles: Optional[List[str]] = Field(default=None, description="Job titles held by the people you want to find")
+    include_similar_titles: Optional[bool] = Field(default=True, description="Whether to include similar titles")
+    person_locations: Optional[List[str]] = Field(default=None, description="The location where people live")
+    person_seniorities: Optional[List[str]] = Field(default=None, description="The job seniority that people hold within their current employer")
+    organization_locations: Optional[List[str]] = Field(default=None, description="The location of the company headquarters for a person's current employer")
+    q_organization_domains_list: Optional[List[str]] = Field(default=None, description="The domain name for the person's employer")
+    contact_email_status: Optional[List[str]] = Field(default=None, description="The email statuses for the people you want to find")
+    organization_ids: Optional[List[str]] = Field(default=None, description="The Apollo IDs for the companies (employers) you want to include")
+    organization_num_employees_ranges: Optional[List[str]] = Field(default=None, description="The number range of employees working for the person's current company")
+    q_keywords: Optional[str] = Field(default=None, description="A string of words over which we want to filter the results")
+    page: Optional[int] = Field(default=1, description="The page number of the Apollo data that you want to retrieve")
+    per_page: Optional[int] = Field(default=10, description="The number of search results that should be returned for each page")
+
 
 @tool
-async def people_search(params: Dict[str, Any]) -> List[Dict[str, Any]]:
+async def people_search(params: PeopleSearchParams) -> List[PeopleSearchData]:
     """Searches for people in the Apollo database.
 
     See https://docs.apollo.io/reference/people-search
 
     Args:
         params (Dict[str, Any]): The search parameters.  Possible keys:
-            q_person_name (str, optional): The name of the person you want to find.
             person_titles (List[str], optional): Job titles held by the people you want to find.
             include_similar_titles (bool, optional): Whether to include similar titles. Default is True.
             person_locations (List[str], optional): The location where people live.
@@ -36,28 +51,28 @@ async def people_search(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     api_key = apollo_config["apiKey"]
     endpoint = apollo_config["endpoint"]
 
-    response = requests.post(
-        f"{endpoint}/v1/mixed_people/search",
-        headers={
-            "Content-Type": "application/json",
-            "Cache-Control": "no-cache",
-        },
-        json={
-            "api_key": api_key,
-            **params
-        }
-    )
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{endpoint}/v1/mixed_people/search",
+            headers={
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache",
+            },
+            json={
+                "api_key": api_key,
+                **params.model_dump(exclude_none=True)
+            }
+        ) as response:
+            if response.status >= 400:
+                error_body = await response.text()
+                raise ApolloError(
+                    response.status,
+                    error_body,
+                    "Failed to fetch people search results"
+                )
 
-    if not response.ok:
-        error_body = response.text
-        raise ApolloError(
-            response.status_code,
-            error_body,
-            "Failed to fetch people search results"
-        )
-
-    raw_data = response.json()
-    return extract_people_search_data(raw_data)
+            raw_data = await response.json()
+            return extract_people_search_data(raw_data)
 
 @tool
 async def organization_search(params: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -84,28 +99,28 @@ async def organization_search(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     api_key = apollo_config["apiKey"]
     endpoint = apollo_config["endpoint"]
 
-    response = requests.post(
-        f"{endpoint}/v1/mixed_companies/search",
-        headers={
-            "Content-Type": "application/json",
-            "Cache-Control": "no-cache",
-        },
-        json={
-            "api_key": api_key,
-            **params
-        }
-    )
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{endpoint}/v1/mixed_companies/search",
+            headers={
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache",
+            },
+            json={
+                "api_key": api_key,
+                **params
+            }
+        ) as response:
+            if response.status >= 400:
+                error_body = await response.text()
+                raise ApolloError(
+                    response.status,
+                    error_body,
+                    "Failed to fetch organization search results"
+                )
 
-    if not response.ok:
-        error_body = response.text
-        raise ApolloError(
-            response.status_code,
-            error_body,
-            "Failed to fetch organization search results"
-        )
-
-    raw_data = response.json()
-    return raw_data
+            raw_data = await response.json()
+            return raw_data
 
 @tool
 async def organization_job_postings(params: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -132,28 +147,28 @@ async def organization_job_postings(params: Dict[str, Any]) -> List[Dict[str, An
     per_page = params.get("per_page", 10)
 
     url = f"{endpoint}/v1/organizations/{organization_id}/job_postings"
-    params = {
+    request_params = {
         "api_key": api_key,
         "page": str(page),
         "per_page": str(per_page)
     }
 
-    response = requests.get(
-        url,
-        headers={
-            "Content-Type": "application/json",
-            "Cache-Control": "no-cache",
-        },
-        params=params
-    )
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            url,
+            headers={
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache",
+            },
+            params=request_params
+        ) as response:
+            if response.status >= 400:
+                error_body = await response.text()
+                raise ApolloError(
+                    response.status,
+                    error_body,
+                    "Failed to fetch organization job postings"
+                )
 
-    if not response.ok:
-        error_body = response.text
-        raise ApolloError(
-            response.status_code,
-            error_body,
-            "Failed to fetch organization job postings"
-        )
-
-    raw_data = response.json()
-    return raw_data
+            raw_data = await response.json()
+            return raw_data
