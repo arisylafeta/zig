@@ -1,0 +1,49 @@
+I'm building a revolutionary and beautiful sales AI application called “Ebisu - think of it as "Cursor for Sales Teams." Just like how Cursor transforms the coding workflow with AI assistance, Ebisu will transform how sales professionals build and manage relationships. Unlike Cursor, our UI needs to look more like Tempo (see screenshot) where we're displaying multiple adjustable panels on the screen.  
+
+OUR MISSION:
+Transform sales from a transactional, volume-driven process into genuine relationship orchestration. We're moving away from "emails sent" metrics toward "meaningful conversations started" - putting the human back at the center of sales while leveraging AI for efficiency.
+
+THE PROBLEM WE'RE SOLVING:
+Current sales tools treat prospects like numbers in a funnel. Sales reps feel like checkout assistants - mechanical, repetitive, disconnected from actual relationship building. Most sales tech focuses on activity tracking rather than relationship intelligence.
+
+OUR SOLUTION - "RELATIONSHIP ORCHESTRATION":
+An AI-powered sales assistant that:
+- Continuously discovers and researches high-quality prospects
+- Provides deep context and timing signals for each interaction
+- Generates personalized outreach with genuine relevance  
+- Manages follow-up sequences dynamically (not rigid sequences)
+- Monitors relationships across the entire pipeline
+- Suggests next best actions based on prospect behavior and market signals
+
+KEY PRINCIPLES:
+1. HUMAN-IN-THE-LOOP: AI suggests, human decides. Every outbound action requires human approval
+2. RELATIONSHIP-CENTRIC: Success measured by conversation quality, not activity volume
+3. CONTEXT-DRIVEN: Every interaction backed by deep prospect and company research
+4. DYNAMIC INTELLIGENCE: Responses and timing adapt to real-world signals, not preset rules
+5. SINGLE INTERFACE: Like Cursor's unified editor, one workspace that adapts to different sales workflows
+
+CORE WORKFLOW:
+- DISCOVER prospects using AI-powered research
+- QUALIFY them through intelligent scoring
+- ORCHESTRATE outreach with perfect timing and context
+- MANAGE responses and relationship progression
+- MONITOR pipeline health and optimization opportunities
+
+TECHNICAL APPROACH:
+- Modern React application with dark theme (#0f0f0f background)
+- Three-panel adaptive layout (like VS Code): AI Chat (left) + Context-aware workspace (center/right)
+- Panels pair intelligently based on workflow needs
+- AI chat serves as navigation and assistant across all modes
+
+USER PERSONAS:
+- Sales Development Representatives (SDRs) doing outbound prospecting
+- Account Executives managing deal progression  
+- Sales Managers optimizing team performance
+- Anyone who believes sales should be about relationships, not just numbers
+
+SUCCESS METRICS:
+- Time to meaningful conversation (not just response)
+- Relationship progression velocity
+- Context relevance in outreach
+- Human satisfaction with AI assistance quality
+- Reduction in manual research and admin work

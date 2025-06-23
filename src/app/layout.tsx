@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "react-mosaic-component/react-mosaic-component.css";
+import { MosaicProvider } from "@/components/layout/MosaicProvider";
+import { CopilotKit } from "@copilotkit/react-core";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +30,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <CopilotKit
+          // Using the self-hosted runtime URL from environment variables
+          runtimeUrl={process.env.NEXT_PUBLIC_COPILOTKIT_RUNTIME_URL}
+          agent={process.env.NEXT_PUBLIC_COPILOTKIT_AGENT_NAME}
+        >
+          <MosaicProvider>
+            {children}
+          </MosaicProvider>
+        </CopilotKit>
       </body>
     </html>
   );
