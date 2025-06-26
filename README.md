@@ -1,8 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ebisu AI - LangGraph + CopilotKit Integration
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app) that integrates a LangGraph AI agent with CopilotKit for prospect search functionality.
+
+## ✨ Features
+
+- **Real-time Agent State Rendering**: See live progress updates as the agent works
+- **Interactive People Search**: Natural language prospect searching using Apollo API
+- **Progress Tracking**: Visual indicators and logs of agent activities
+- **Human-in-the-loop**: Chat interface for guided prospect discovery
+- **Rich Data Display**: Comprehensive prospect information in an interactive table
+
+## Environment Setup
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```bash
+# CopilotKit Configuration
+NEXT_PUBLIC_COPILOTKIT_RUNTIME_URL=http://localhost:8123
+NEXT_PUBLIC_COPILOT_API_KEY=your_copilot_cloud_api_key_here
+NEXT_PUBLIC_COPILOTKIT_AGENT_NAME=zig
+
+# OpenAI API Key (for the agent)
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+For the agent directory, create a `.env` file:
+
+```bash
+OPENAI_API_KEY=your_openai_api_key_here
+TAVILY_API_KEY=your_tavily_api_key_here
+LANGSMITH_API_KEY=your_langsmith_api_key_here
+APOLLO_API_KEY=your_apollo_api_key_here
+```
 
 ## Getting Started
 
-First, run the development server:
+First, start the LangGraph agent:
+
+```bash
+cd agent
+langgraph up
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
@@ -16,18 +56,50 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Navigate to [http://localhost:3000/copilotkit](http://localhost:3000/copilotkit) to access the AI-powered prospect search interface.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 How It Works
+
+### State Emission & Real-time Updates
+Following the [CopilotKit + LangGraph tutorial](https://dev.to/copilotkit/easily-build-a-ui-for-your-langgraph-ai-agent-in-minutes-with-copilotkit-1khj), this implementation features:
+
+1. **Progress Logging**: Real-time updates during tool execution
+2. **State Rendering**: Live progress display in the chat interface using `useCoAgentStateRender`
+3. **Status Tracking**: Visual indicators showing current agent status
+4. **Bidirectional State**: Synchronized state between agent and UI
+
+### Agent Workflow
+1. User makes a search request via chat
+2. Agent processes the request and emits progress states
+3. Apollo people search tool is executed with real-time logging
+4. Results are processed and displayed in the table
+5. User can refine search or start new queries
+
+## Usage Examples
+
+Try these search queries in the chat:
+
+- "Search for software engineers at tech companies in San Francisco"
+- "Find marketing managers at SaaS companies with 100-500 employees"
+- "Look for sales directors in the healthcare industry in New York"
+- "Search for product managers at startups in Austin"
+
+## Architecture
+
+- **Frontend**: Next.js with CopilotKit React components
+- **Agent**: LangGraph with Python for workflow orchestration
+- **Tools**: Apollo API for people search functionality
+- **State Management**: CopilotKit's shared state system
+- **Real-time Updates**: WebSocket-based state emission
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+To learn more about the technologies used:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [CopilotKit Documentation](https://docs.copilotkit.ai/) - Building AI copilots and agents
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/) - Agent workflow orchestration
+- [Next.js Documentation](https://nextjs.org/docs) - React framework features and API
+- [Apollo API Documentation](https://docs.apollo.io/) - People and company search
 
 ## Deploy on Vercel
 

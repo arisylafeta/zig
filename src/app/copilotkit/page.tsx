@@ -1,165 +1,157 @@
 "use client";
 
-import { useCoAgent, useCopilotAction } from "@copilotkit/react-core";
-import { CopilotKitCSSProperties} from "@copilotkit/react-ui";
-import { useState } from "react";
-import SideChat from "@/components/chat-ui";
+import { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/table";
+import { CopilotSidebar } from "@copilotkit/react-ui";
+import { useCoAgent, useCoAgentStateRender } from "@copilotkit/react-core";
+import { Progress } from "@/components/progress";
 
-export default function CopilotKitPage() {
-  const [themeColor, setThemeColor] = useState("#6366f1");
+type Person = {
+  first_name: string;
+  last_name: string;
+  linkedin_url: string;
+  email_status: string;
+  email: string;
+  title: string;
+  organization: string;
+  location: string;
+};
 
-  // 🪁 Frontend Actions: https://docs.copilotkit.ai/guides/frontend-actions
-  useCopilotAction({
-    name: "setThemeColor",
-    parameters: [{
-      name: "themeColor",
-      description: "The theme color to set. Make sure to pick nice colors.",
-      required: true, 
-    }],
-    handler({ themeColor }) {
-      setThemeColor(themeColor);
-    },
-  });
+type ProgressLog = {
+  id: string;
+  message: string;
+  timestamp: string;
+  type: 'info' | 'success' | 'error' | 'progress';
+};
 
-  return (
-    <main style={{ "--copilot-kit-primary-color": themeColor } as CopilotKitCSSProperties}>
-            <SideChat themeColor={themeColor} />
-      <YourMainContent themeColor={themeColor} />
-    </main>
-  );
-}
-
-// State of the agent, make sure this aligns with your agent's state.
+// AgentState type to match the backend
 type AgentState = {
-  proverbs: string[];
-}
+  people: Person[];
+  logs: ProgressLog[];
+  current_status: string;
+};
 
-function YourMainContent({ themeColor }: { themeColor: string }) {
-  // 🪁 Shared State: https://docs.copilotkit.ai/coagents/shared-state
-  const {state, setState} = useCoAgent<AgentState>({
-    name: "zig",
+const columns: ColumnDef<Person>[] = [
+  {
+    accessorKey: "first_name",
+    header: "First Name",
+  },
+  {
+    accessorKey: "last_name", 
+    header: "Last Name",
+  },
+  {
+    accessorKey: "title",
+    header: "Title",
+  },
+  {
+    accessorKey: "organization",
+    header: "Company",
+  },
+  {
+    accessorKey: "email",
+    header: "Email",
+    cell: ({ row }) => {
+      const email = row.getValue("email") as string;
+      return (
+        <span className={email === "Unlock" ? "text-orange-500 font-medium" : ""}>
+          {email}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "location",
+    header: "Location",
+  },
+  {
+    accessorKey: "linkedin_url",
+    header: "LinkedIn",
+    cell: ({ row }) => {
+      const url = row.getValue("linkedin_url") as string;
+      return url ? (
+        <a 
+          href={url} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 underline"
+        >
+          Profile
+        </a>
+      ) : (
+        <span className="text-gray-400">N/A</span>
+      );
+    },
+  },
+];
+
+export default function AIPage() {
+  // Connect to the LangGraph agent using useCoAgent
+  const { state } = useCoAgent<AgentState>({
+    name: "zig", // This should match the agent name in langgraph.json
     initialState: {
-      proverbs: [
-        "CopilotKit may be new, but its the best thing since sliced bread.",
-      ],
-    },
-  })
-
-  // 🪁 Frontend Actions: https://docs.copilotkit.ai/coagents/frontend-actions
-  useCopilotAction({
-    name: "addProverb",
-    parameters: [{
-      name: "proverb",
-      description: "The proverb to add. Make it witty, short and concise.",
-      required: true,
-    }],
-    handler: ({ proverb }) => {
-      setState({
-        ...state,
-        proverbs: [...state.proverbs, proverb],
-      });
-    },
+      people: [],
+      logs: [],
+      current_status: "Ready"
+    }
   });
 
-  //🪁 Generative UI: https://docs.copilotkit.ai/coagents/generative-ui
-  useCopilotAction({
-    name: "getWeather",
-    description: "Get the weather for a given location.",
-    available: "disabled",
-    parameters: [
-      { name: "location", type: "string", required: true },
-    ],
-    render: ({ args }) => {
-      return <WeatherCard location={args.location} themeColor={themeColor} />
+  // Render agent state in the chat UI (like in the tutorial)
+  useCoAgentStateRender<AgentState>({
+    name: "zig",
+    render: ({ state }) => {
+      if (state.logs?.length > 0) {
+        // Convert timestamp strings back to Date objects for the Progress component
+        const logsWithDates = state.logs.map(log => ({
+          ...log,
+          timestamp: new Date(log.timestamp)
+        }));
+        return <Progress logs={logsWithDates} />;
+      }
+      return null;
     },
-  });
+  }, [state]);
+
+  const peopleCount = state.people?.length || 0;
+  const currentStatus = state.current_status || "Ready";
 
   return (
-    <div
-      style={{ backgroundColor: themeColor }}
-      className="h-screen w-screen flex justify-center items-center flex-col transition-colors duration-300"
-    >
-      <div className="bg-white/20 backdrop-blur-md p-8 rounded-2xl shadow-xl max-w-2xl w-full">
-        <h1 className="text-4xl font-bold text-white mb-2 text-center">Proverbs</h1>
-        <p className="text-gray-200 text-center italic mb-6">This is a demonstrative page, but it could be anything you want! 🪁</p>
-        <hr className="border-white/20 my-6" />
-        <div className="flex flex-col gap-3">
-          {state.proverbs?.map((proverb, index) => (
-            <div 
-              key={index} 
-              className="bg-white/15 p-4 rounded-xl text-white relative group hover:bg-white/20 transition-all"
-            >
-              <p className="pr-8">{proverb}</p>
-              <button 
-                onClick={() => setState({
-                  ...state,
-                  proverbs: state.proverbs?.filter((_, i) => i !== index),
-                })}
-                className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity 
-                  bg-red-500 hover:bg-red-600 text-white rounded-full h-6 w-6 flex items-center justify-center"
-              >
-                ✕
-              </button>
+    <div className="flex h-screen">
+      <div className="w-1/2 p-8 overflow-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-2">People Search Results</h1>
+          <div className="flex items-center gap-3 mb-3">
+            <p className="text-gray-600">
+              {peopleCount > 0 
+                ? `Showing ${peopleCount} people found` 
+                : "No people found yet. Use the chat to search for prospects."
+              }
+            </p>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                currentStatus.includes("progress") || currentStatus.includes("Searching") || currentStatus.includes("Executing") 
+                  ? "bg-blue-500 animate-pulse" 
+                  : currentStatus.includes("completed") || currentStatus.includes("Ready")
+                  ? "bg-green-500"
+                  : "bg-gray-400"
+              }`}></div>
+              <span className="text-sm text-gray-500">{currentStatus}</span>
             </div>
-          ))}
+          </div>
         </div>
-        {state.proverbs?.length === 0 && <p className="text-center text-white/80 italic my-8">
-          No proverbs yet. Ask the assistant to add some!
-        </p>}
+        <DataTable columns={columns} data={state.people || []} />
+      </div>
+      <div className="w-1/2">
+        <CopilotSidebar
+            className="h-full"
+            clickOutsideToClose={true}
+            defaultOpen={true}
+            labels={{
+            title: "Ebisu AI",
+            initial: "👋 Ready to supercharge your sales process? Try asking me to 'search for software engineers at tech companies in San Francisco' or similar queries to find prospects!"
+            }}
+        />
       </div>
     </div>
-  );
-}
-
-// Simple sun icon for the weather card
-function SunIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-14 h-14 text-yellow-200">
-      <circle cx="12" cy="12" r="5" />
-      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" strokeWidth="2" stroke="currentColor" />
-    </svg>
-  );
-}
-
-// Weather card component where the location and themeColor are based on what the agent
-// sets via tool calls.
-function WeatherCard({ location, themeColor }: { location?: string, themeColor: string }) {
-  return (
-    <div
-    style={{ backgroundColor: themeColor }}
-    className="rounded-xl shadow-xl mt-6 mb-4 max-w-md w-full"
-  >
-    <div className="bg-white/20 p-4 w-full">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-white capitalize">{location}</h3>
-          <p className="text-white">Current Weather</p>
-        </div>
-        <SunIcon />
-      </div>
-      
-      <div className="mt-4 flex items-end justify-between">
-        <div className="text-3xl font-bold text-white">70°</div>
-        <div className="text-sm text-white">Clear skies</div>
-      </div>
-      
-      <div className="mt-4 pt-4 border-t border-white">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p className="text-white text-xs">Humidity</p>
-            <p className="text-white font-medium">45%</p>
-          </div>
-          <div>
-            <p className="text-white text-xs">Wind</p>
-            <p className="text-white font-medium">5 mph</p>
-          </div>
-          <div>
-            <p className="text-white text-xs">Feels Like</p>
-            <p className="text-white font-medium">72°</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
   );
 }
